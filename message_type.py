@@ -97,8 +97,10 @@ def type_of_message(recipient_id, fb_data):
             return add_finish(recipient_id, message)
 
         elif 'satisfaction_levels' == fb_data['message']['quick_reply']['payload']:
-            message = 'satisfaction level'
-            return normal_message(recipient_id, message)
+            size_cache = len(cache[str(recipient_id)])
+            cache[recipient_id][str(size_cache)]["type"] = "satisfaction_level"
+            message = 'How many levels?'
+            return satisfaction_levels(recipient_id, message)
 
         elif 'another_question' == fb_data['message']['quick_reply']['payload']:
             if str(recipient_id) in cache:
@@ -106,6 +108,62 @@ def type_of_message(recipient_id, fb_data):
                 cache[recipient_id][str(size_cache + 1)] = {"question":"none", "type":"none", "attachment":{"type":"none"}}
                 message = 'Write your question #' +  str(size_cache + 1)  + ' and send ...'
                 return normal_message(recipient_id, message)
+
+        elif 'level_5' == fb_data['message']['quick_reply']['payload']:
+            if str(recipient_id) in cache:
+                size_cache = len(cache[str(recipient_id)])
+                cache[recipient_id][str(size_cache)]["levels"] = {"level":5, "best":"none"}
+                message = 'What is the best score?'
+                return best_score(recipient_id, message, 5)
+
+        elif 'level_6' == fb_data['message']['quick_reply']['payload']:
+            if str(recipient_id) in cache:
+                size_cache = len(cache[str(recipient_id)])
+                cache[recipient_id][str(size_cache)]["levels"] = {"level":6, "best":"none"}
+                message = 'What is the best score?'
+                return best_score(recipient_id, message, 6)
+
+        elif 'level_7' == fb_data['message']['quick_reply']['payload']:
+            if str(recipient_id) in cache:
+                size_cache = len(cache[str(recipient_id)])
+                cache[recipient_id][str(size_cache)]["levels"] = {"level":7, "best":"none"}
+                message = 'What is the best score?'
+                return best_score(recipient_id, message, 7)
+
+        elif 'level_8' == fb_data['message']['quick_reply']['payload']:
+            if str(recipient_id) in cache:
+                size_cache = len(cache[str(recipient_id)])
+                cache[recipient_id][str(size_cache)]["levels"] = {"level":8, "best":"none"}
+                message = 'What is the best score?'
+                return best_score(recipient_id, message, 8)
+
+        elif 'level_9' == fb_data['message']['quick_reply']['payload']:
+            if str(recipient_id) in cache:
+                size_cache = len(cache[str(recipient_id)])
+                cache[recipient_id][str(size_cache)]["levels"] = {"level":9, "best":"none"}
+                message = 'What is the best score?'
+                return best_score(recipient_id, message, 9)
+
+        elif 'level_10' == fb_data['message']['quick_reply']['payload']:
+            if str(recipient_id) in cache:
+                size_cache = len(cache[str(recipient_id)])
+                cache[recipient_id][str(size_cache)]["levels"] = {"level":10, "best":"none"}
+                message = 'What is the best score?'
+                return best_score(recipient_id, message, 10)
+
+        elif 'less_value' == fb_data['message']['quick_reply']['payload']:
+            if str(recipient_id) in cache:
+                size_cache = len(cache[str(recipient_id)])
+                cache[recipient_id][str(size_cache)]["levels"]["best"] = 1
+                message = 'Add image/video/audio to the question or select one option below'
+                return add_finish(recipient_id, message)
+
+        elif 'best_value' == fb_data['message']['quick_reply']['payload']:
+            if str(recipient_id) in cache:
+                size_cache = len(cache[str(recipient_id)])
+                cache[recipient_id][str(size_cache)]["levels"]["best"] = cache[recipient_id][str(size_cache)]["levels"]["level"]
+                message = 'Add image/video/audio to the question or select one option below'
+                return add_finish(recipient_id, message)
 
     elif 'attachments' in fb_data["message"]:
         if fb_data["message"]['attachments'][0]['type'] == 'location':
@@ -202,6 +260,71 @@ def add_finish(recipient_id, text):
               "content_type":"text",
               "title":"Finish",
               "payload":"finish"
+            }]
+      }
+    }"""
+    return add_finish % (recipient_id, text)
+
+def best_score(recipient_id, text, maximum):
+    best_score = """{
+        "recipient":{
+          "id":"%s"
+        },
+        "message":{
+          "text":"%s",
+          "quick_replies":[
+              {
+                "content_type":"text",
+                "title":"1",
+                "payload":"less_value"
+              },
+              {
+                "content_type":"text",
+                "title":"%s",
+                "payload":"best_value"
+              }]
+        }
+    }"""
+
+    return best_score % (recipient_id, text, maximum)
+
+def satisfaction_levels(recipient_id, text):
+    add_finish = """{
+      "recipient":{
+        "id":"%s"
+      },
+      "message":{
+        "text":"%s",
+        "quick_replies":[
+            {
+              "content_type":"text",
+              "title":"5",
+              "payload":"level_5"
+            },
+            {
+              "content_type":"text",
+              "title":"6",
+              "payload":"level_6"
+            },
+            {
+              "content_type":"text",
+              "title":"7",
+              "payload":"level_7"
+            },
+            {
+              "content_type":"text",
+              "title":"8",
+              "payload":"level_8"
+            },
+            {
+              "content_type":"text",
+              "title":"9",
+              "payload":"level_9"
+            },
+            {
+              "content_type":"text",
+              "title":"10",
+              "payload":"level_10"
             }]
       }
     }"""
