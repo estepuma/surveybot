@@ -13,28 +13,36 @@ def add_attachment_to_question(recipient_id, fb_data):
             size_cache = len(cache[recipient_id])
             cache[recipient_id][str(size_cache)]["attachment"]["type"] = "image"
             cache[recipient_id][str(size_cache)]["attachment"]["url"] = fb_data['payload']['url']
+            message = 'Add another question or finish the survey'
+            return add_finish(recipient_id, message)
 
-            next_question = size_cache + 1
-            cache[recipient_id][str(next_question)] = {"question":"none", "type":"none", "attachment":{"type":"none"}}
-            message = 'Write your question #' +  str(next_question)  + ' and send ...'
-            return normal_message(recipient_id, message)
         elif fb_data['type'] == 'audio':
             size_cache = len(cache[str(recipient_id)])
             cache[recipient_id][str(size_cache)]["attachment"]["type"] = "audio"
             cache[recipient_id][str(size_cache)]["attachment"]["url"] = fb_data['payload']['url']
+            message = 'Add another question or finish the survey'
+            return add_finish(recipient_id, message)
+
         elif fb_data['type'] == 'video':
             size_cache = len(cache[str(recipient_id)])
             cache[recipient_id][str(size_cache)]["attachment"]["type"] = "video"
             cache[recipient_id][str(size_cache)]["attachment"]["url"] = fb_data['payload']['url']
+            message = 'Add another question or finish the survey'
+            return add_finish(recipient_id, message)
+
         elif fb_data['type'] == 'file':
             size_cache = len(cache[str(recipient_id)])
             cache[recipient_id][str(size_cache)]["attachment"]["type"] = "file"
             cache[recipient_id][str(size_cache)]["attachment"]["url"] = fb_data['payload']['url']
+            message = 'Add another question or finish the survey'
+            return add_finish(recipient_id, message)
+
         elif fb_data['type'] == 'location':
             size_cache = len(cache[str(recipient_id)])
             cache[recipient_id][str(size_cache)]["attachment"]["type"] = "location"
-            cache[recipient_id][str(size_cache)]["attachment"]["coordinates"]["lat"] = fb_data['payload']['coordinates']['lat']
-            cache[recipient_id][str(size_cache)]["attachment"]["coordinates"]["long"] = fb_data['payload']['coordinates']['long']
+            cache[recipient_id][str(size_cache)]["attachment"]["coordinates"] = {"lat": fb_data['payload']['coordinates']['lat'], "long":fb_data['payload']['coordinates']['long']}
+            message = 'Add another question or finish the survey'
+            return add_finish(recipient_id, message)
 
     logging.debug("*** Cache: %s ***", str(cache))
 
@@ -79,31 +87,25 @@ def type_of_message(recipient_id, fb_data):
         elif 'free_answer' == fb_data['message']['quick_reply']['payload']: #Config a free answer question
             size_cache = len(cache[str(recipient_id)])
             cache[recipient_id][str(size_cache)]["type"] = "free_answer"
-            #cache[recipient_id][str(size_cache + 1)] = {"question":"none", "type":"none", "attachment":"none"}
-            message = 'Add image or video or tap -No- button to continue'
-            return add_files(recipient_id, message)
-            # return add_type_question(recipient_id, message, "free_answer", size_cache)
+            message = 'Add image/video/audio to the question or select one option below'
+            return add_finish(recipient_id, message)
 
         elif 'yes_no' == fb_data['message']['quick_reply']['payload']:
-            # size_cache = len(cache[str(recipient_id)])
-            # logging.debug("cache size ++++++++ %s", str(size_cache));
-            # cache[recipient_id][str(size_cache)]["type"] = "yes_no"
-            # cache[recipient_id][str(size_cache + 1)] = {"question":"none", "type":"none"}
-            message = 'Add an image/video or tap No if you want to continue'
-            return normal_message(recipient_id, message)
-            # return add_type_question(recipient_id, message, "yes_no", size_cache)
+            size_cache = len(cache[str(recipient_id)])
+            cache[recipient_id][str(size_cache)]["type"] = "yes_no"
+            message = 'Add image/video/audio to the question or select one option below'
+            return add_finish(recipient_id, message)
 
         elif 'satisfaction_levels' == fb_data['message']['quick_reply']['payload']:
             message = 'satisfaction level'
             return normal_message(recipient_id, message)
 
-        elif 'no_attachments' == fb_data['message']['quick_reply']['payload']:
+        elif 'another_question' == fb_data['message']['quick_reply']['payload']:
             if str(recipient_id) in cache:
                 size_cache = len(cache[recipient_id])
                 cache[recipient_id][str(size_cache + 1)] = {"question":"none", "type":"none", "attachment":{"type":"none"}}
                 message = 'Write your question #' +  str(size_cache + 1)  + ' and send ...'
                 return normal_message(recipient_id, message)
-
 
     elif 'attachments' in fb_data["message"]:
         if fb_data["message"]['attachments'][0]['type'] == 'location':
@@ -111,7 +113,6 @@ def type_of_message(recipient_id, fb_data):
     elif cache.get(recipient_id):
         message = fb_data['message']['text']
         size_cache = len(cache[recipient_id])
-        logging.debug("cache size +++++++ %s", str(size_cache))
         cache[recipient_id][str(size_cache)] = {"question":message, "type":"none", "attachment":{"type":"none"}}
         #normal_message(recipient_id, message)
 
@@ -124,11 +125,10 @@ def type_of_message(recipient_id, fb_data):
 
 
 def add_type_question(recipient_id, message, type_question, size_cache):
-    logging.debug("cache size ++++++++ %s", str(size_cache));
     cache[recipient_id][str(size_cache)]["type"] = type_question
     #cache[recipient_id][str(size_cache + 1)] = {"question":"none", "type":"none"}
     #return normal_message(recipient_id, message)
-    return add_files(recipient_id, message)
+    return add_finish(recipient_id, message)
 
 def normal_message(recipient_id, text):
     greet = """{
@@ -185,8 +185,8 @@ def next_question(recipient_id, text):
     }"""
     return type_of_questions % (recipient_id, text)
 
-def add_files(recipient_id, text):
-    add_files = """{
+def add_finish(recipient_id, text):
+    add_finish = """{
       "recipient":{
         "id":"%s"
       },
@@ -195,9 +195,14 @@ def add_files(recipient_id, text):
         "quick_replies":[
             {
               "content_type":"text",
-              "title":"No",
-              "payload":"no_attachments"
+              "title":"Add another Question",
+              "payload":"another_question"
+            },
+            {
+              "content_type":"text",
+              "title":"Finish",
+              "payload":"finish"
             }]
       }
     }"""
-    return add_files % (recipient_id, text)
+    return add_finish % (recipient_id, text)
