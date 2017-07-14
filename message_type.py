@@ -10,32 +10,16 @@ def add_attachment_to_question(recipient_id, fb_data):
 
     if str(recipient_id) in cache:
         if fb_data['type'] == 'image':
-            size_cache = len(cache[recipient_id])
-            cache[recipient_id][str(size_cache)]["attachment"]["type"] = "image"
-            cache[recipient_id][str(size_cache)]["attachment"]["url"] = fb_data['payload']['url']
-            message = 'Add another question or finish the survey'
-            return add_finish(recipient_id, message)
+            return attachment_file(recipient_id, fb_data, 'image')
 
         elif fb_data['type'] == 'audio':
-            size_cache = len(cache[str(recipient_id)])
-            cache[recipient_id][str(size_cache)]["attachment"]["type"] = "audio"
-            cache[recipient_id][str(size_cache)]["attachment"]["url"] = fb_data['payload']['url']
-            message = 'Add another question or finish the survey'
-            return add_finish(recipient_id, message)
+            return attachment_file(recipient_id, fb_data, 'audio')
 
         elif fb_data['type'] == 'video':
-            size_cache = len(cache[str(recipient_id)])
-            cache[recipient_id][str(size_cache)]["attachment"]["type"] = "video"
-            cache[recipient_id][str(size_cache)]["attachment"]["url"] = fb_data['payload']['url']
-            message = 'Add another question or finish the survey'
-            return add_finish(recipient_id, message)
+            return attachment_file(recipient_id, fb_data, 'video')
 
         elif fb_data['type'] == 'file':
-            size_cache = len(cache[str(recipient_id)])
-            cache[recipient_id][str(size_cache)]["attachment"]["type"] = "file"
-            cache[recipient_id][str(size_cache)]["attachment"]["url"] = fb_data['payload']['url']
-            message = 'Add another question or finish the survey'
-            return add_finish(recipient_id, message)
+            return attachment_file(recipient_id, fb_data, 'file')
 
         elif fb_data['type'] == 'location':
             size_cache = len(cache[str(recipient_id)])
@@ -46,6 +30,12 @@ def add_attachment_to_question(recipient_id, fb_data):
 
     logging.debug("*** Cache: %s ***", str(cache))
 
+def attachment_file(recipient_id, fb_data, type_of_file):
+    size_cache = len(cache[str(recipient_id)])
+    cache[recipient_id][str(size_cache)]["attachment"]["type"] = type_of_file
+    cache[recipient_id][str(size_cache)]["attachment"]["url"] = fb_data['payload']['url']
+    message = 'Add another question or finish the survey'
+    return add_finish(recipient_id, message)
 
 def send_message(recipient_id, message_string):
 
@@ -69,6 +59,7 @@ def send_message(recipient_id, message_string):
 
 def type_of_message(recipient_id, fb_data):
     message = ''
+
 
     if 'text' in fb_data['message']:
         message = fb_data['message']['text']
@@ -111,45 +102,28 @@ def type_of_message(recipient_id, fb_data):
 
         elif 'level_5' == fb_data['message']['quick_reply']['payload']:
             if str(recipient_id) in cache:
-                size_cache = len(cache[str(recipient_id)])
-                cache[recipient_id][str(size_cache)]["levels"] = {"level":5, "best":"none"}
-                message = 'What is the best score?'
-                return best_score(recipient_id, message, 5)
+                return set_level(recipient_id, 5)
 
         elif 'level_6' == fb_data['message']['quick_reply']['payload']:
             if str(recipient_id) in cache:
-                size_cache = len(cache[str(recipient_id)])
-                cache[recipient_id][str(size_cache)]["levels"] = {"level":6, "best":"none"}
-                message = 'What is the best score?'
-                return best_score(recipient_id, message, 6)
+                return set_level(recipient_id, 6)
 
         elif 'level_7' == fb_data['message']['quick_reply']['payload']:
             if str(recipient_id) in cache:
-                size_cache = len(cache[str(recipient_id)])
-                cache[recipient_id][str(size_cache)]["levels"] = {"level":7, "best":"none"}
-                message = 'What is the best score?'
-                return best_score(recipient_id, message, 7)
+                return set_level(recipient_id, 7)
 
         elif 'level_8' == fb_data['message']['quick_reply']['payload']:
             if str(recipient_id) in cache:
-                size_cache = len(cache[str(recipient_id)])
-                cache[recipient_id][str(size_cache)]["levels"] = {"level":8, "best":"none"}
-                message = 'What is the best score?'
-                return best_score(recipient_id, message, 8)
+                return set_level(recipient_id, 8)
 
         elif 'level_9' == fb_data['message']['quick_reply']['payload']:
             if str(recipient_id) in cache:
-                size_cache = len(cache[str(recipient_id)])
-                cache[recipient_id][str(size_cache)]["levels"] = {"level":9, "best":"none"}
-                message = 'What is the best score?'
-                return best_score(recipient_id, message, 9)
+                return set_level(recipient_id, 9)
+
 
         elif 'level_10' == fb_data['message']['quick_reply']['payload']:
             if str(recipient_id) in cache:
-                size_cache = len(cache[str(recipient_id)])
-                cache[recipient_id][str(size_cache)]["levels"] = {"level":10, "best":"none"}
-                message = 'What is the best score?'
-                return best_score(recipient_id, message, 10)
+                return set_level(recipient_id, 10)
 
         elif 'less_value' == fb_data['message']['quick_reply']['payload']:
             if str(recipient_id) in cache:
@@ -164,6 +138,10 @@ def type_of_message(recipient_id, fb_data):
                 cache[recipient_id][str(size_cache)]["levels"]["best"] = cache[recipient_id][str(size_cache)]["levels"]["level"]
                 message = 'Add image/video/audio to the question or select one option below'
                 return add_finish(recipient_id, message)
+
+        elif 'finish' == fb_data['message']['quick_reply']['payload']:
+            if str(recipient_id) in cache:
+
 
     elif 'attachments' in fb_data["message"]:
         if fb_data["message"]['attachments'][0]['type'] == 'location':
@@ -181,12 +159,11 @@ def type_of_message(recipient_id, fb_data):
 
 
 
-
-def add_type_question(recipient_id, message, type_question, size_cache):
-    cache[recipient_id][str(size_cache)]["type"] = type_question
-    #cache[recipient_id][str(size_cache + 1)] = {"question":"none", "type":"none"}
-    #return normal_message(recipient_id, message)
-    return add_finish(recipient_id, message)
+def set_level(recipient_id, level):
+    size_cache = len(cache[str(recipient_id)])
+    cache[recipient_id][str(size_cache)]["levels"] = {"level":level, "best":"none"}
+    message = 'What is the best score?'
+    return best_score(recipient_id, message, level)
 
 def normal_message(recipient_id, text):
     greet = """{
