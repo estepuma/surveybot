@@ -60,7 +60,6 @@ def send_message(recipient_id, message_string):
 def type_of_message(recipient_id, fb_data):
     message = ''
 
-
     if 'text' in fb_data['message']:
         message = fb_data['message']['text']
     if message.lower() == 'hi' or message.lower() == 'hello' or message.lower() == 'hola':
@@ -76,22 +75,13 @@ def type_of_message(recipient_id, fb_data):
             return normal_message(recipient_id, message)
 
         elif 'free_answer' == fb_data['message']['quick_reply']['payload']: #Config a free answer question
-            size_cache = len(cache[str(recipient_id)])
-            cache[recipient_id][str(size_cache)]["type"] = "free_answer"
-            message = 'Add image/video/audio to the question or select one option below'
-            return add_finish(recipient_id, message)
+            return set_question_type(recipient_id, 'free_answer')
 
         elif 'yes_no' == fb_data['message']['quick_reply']['payload']:
-            size_cache = len(cache[str(recipient_id)])
-            cache[recipient_id][str(size_cache)]["type"] = "yes_no"
-            message = 'Add image/video/audio to the question or select one option below'
-            return add_finish(recipient_id, message)
+            return set_question_type(recipient_id, 'yes_no')
 
         elif 'satisfaction_levels' == fb_data['message']['quick_reply']['payload']:
-            size_cache = len(cache[str(recipient_id)])
-            cache[recipient_id][str(size_cache)]["type"] = "satisfaction_level"
-            message = 'How many levels?'
-            return satisfaction_levels(recipient_id, message)
+            return set_question_type(recipient_id, 'satisfaction_level')
 
         elif 'another_question' == fb_data['message']['quick_reply']['payload']:
             if str(recipient_id) in cache:
@@ -141,6 +131,7 @@ def type_of_message(recipient_id, fb_data):
 
         elif 'finish' == fb_data['message']['quick_reply']['payload']:
             if str(recipient_id) in cache:
+                return finish_webview(recipient_id)
 
 
     elif 'attachments' in fb_data["message"]:
@@ -158,12 +149,48 @@ def type_of_message(recipient_id, fb_data):
         return normal_message(recipient_id, message)
 
 
+def set_question_type(recipient_id, question_type):
+    size_cache = len(cache[str(recipient_id)])
+    cache[recipient_id][str(size_cache)]["type"] = question_type
+    message = 'Add image/video/audio to the question or select one option below'
+    return add_finish(recipient_id, message)
+
 
 def set_level(recipient_id, level):
     size_cache = len(cache[str(recipient_id)])
     cache[recipient_id][str(size_cache)]["levels"] = {"level":level, "best":"none"}
     message = 'What is the best score?'
     return best_score(recipient_id, message, level)
+
+
+def finish_webview(recipient_id):
+    webview = """
+        {
+      "recipient":{
+        "id":%s
+      },
+      "message":{
+        "attachment":{
+          "type":"template",
+          "payload":{
+            "template_type":"button",
+            "text":"What do you want to do next?",
+            "buttons":[
+              {
+                "type":"web_url",
+                "url":"https://f34d61b3.ngrok.io/static/sharing.html",
+                "title":"Send inquiry",
+                "webview_height_ratio": "full",
+                "messenger_extensions": true,
+                "payload":"THIS AN EXAMPLE *********"
+              }
+            ]
+          }
+        }
+      }
+    }
+    """
+    return webview % (recipient_id)
 
 def normal_message(recipient_id, text):
     greet = """{

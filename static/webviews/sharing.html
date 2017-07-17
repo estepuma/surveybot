@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Title of the document</title>
+
+<script type="text/javascript">
+    (function(d, s, id){
+    var js, fjs = d.getElementsByTagName(s)[0];
+    if (d.getElementById(id)) {return;}
+    js = d.createElement(s); js.id = id;
+    js.src = "//connect.facebook.com/en_US/messenger.Extensions.js";
+    fjs.parentNode.insertBefore(js, fjs);
+    }(document, 'script', 'Messenger'));
+
+    window.extAsyncInit = function() {
+      // the Messenger Extensions JS SDK is done loading
+      console.log("the log is loaded ...");
+    };
+
+
+</script>
+</head>
+
+<body>
+  Content of the document ......
+  <script>
+  var messageToShare = {
+    "attachment":{
+       "type":"template",
+       "payload":{
+           "template_type":"generic",
+           "elements": [{
+               "title":"I took Peter's 'Which Hat Are You?' Quiz",
+               "image_url": "https://eneiceo12.files.wordpress.com/2011/05/pequec3b1as-cosas.jpg",
+               "subtitle": "My result: Fez",
+               "default_action":{
+                   "type":"web_url",
+                   "url": "https://eneiceo12.files.wordpress.com/2011/05/pequec3b1as-cosas.jpg"
+               },
+               "buttons":[{
+                   "type":"web_url",
+                   "url":"https://eneiceo12.files.wordpress.com/2011/05/pequec3b1as-cosas.jpg",
+                   "title":"Take the Quiz"
+               }]
+           }]
+       }
+    }
+  };
+
+  MessengerExtensions.beginShareFlow(function success(response) {
+  // User dismissed without error, but did they
+      // share the message?
+
+      if(response.is_sent){
+          // The user actually did share.
+        // Perhaps close the window w/ requestCloseBrowser().
+      }else{
+
+      }
+
+  }, function error(errorCode, errorMessage) {
+  // An error occurred in the process
+
+  },
+  messageToShare,
+  "broadcast");
+  </script>
+</body>
+
+</html>

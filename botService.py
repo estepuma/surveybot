@@ -1,12 +1,16 @@
 import os
 import sys
 
-from bottle import route, run, request, response
+from bottle import route, run, request, response, static_file
 from message_type import send_message, add_attachment_to_question, type_of_message
 
 import logging
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
+
+@route('/static/<filepath:path>')
+def server_static(filepath):
+    return static_file(filepath, root='./static/webviews')
 
 @route('/webhook', method='GET')
 def verify():
@@ -31,6 +35,7 @@ def webhook():
     # endpoint for processing incoming messaging events
 
     data = request.json
+    logging.debug('\n\n')
     logging.debug(data)  # you may not want to log every incoming message in production, but it's good for testing
 
     if data["object"] == "page":
