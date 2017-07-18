@@ -2,7 +2,7 @@ import os
 import sys
 
 from bottle import route, run, request, response, static_file
-from message_type import send_message, add_attachment_to_question, type_of_message
+from message_type import send_message, add_attachment_to_question, type_of_message, display_survey_type
 
 import logging
 
@@ -29,11 +29,20 @@ def verify():
     return "Hello world", 200
 
 
+@route('/survey/<survey_id>/questions/<total_questions>')
+def display_survey(survey_id, total_questions):
+    logging.debug("***** survey:%s  total_questions: %s", survey_id, total_questions)
+
+    if survey_id:
+        display_survey_type(survey_id, total_questions)
+
+
+
 @route('/webhook', method='POST')
 def webhook():
 
     # endpoint for processing incoming messaging events
-
+    logging.debug("****** WEBHOOK")
     data = request.json
     logging.debug('\n\n')
     logging.debug(data)  # you may not want to log every incoming message in production, but it's good for testing
@@ -64,17 +73,21 @@ def webhook():
                     pass
 
                 if messaging_event.get("postback"):  # user clicked/tapped "postback" button in earlier message
+                    logging.debug("******** POSTBACK ***********")
                     pass
 
                 if messaging_event.get("referral") and messaging_event["referral"]["source"] == "MESSENGER_CODE":
+                    logging.debug("******** REFERRAL ***********")
                     data = messaging_event["referral"]["ref"]
                     sender_id = messaging_event["sender"]["id"]
 
                     send_message(sender_id, "you has sent a messenger code with data: " + data)
 
-    response.status = 200
-    return
+        response.status = 200
+        return
 
+    elif data["survey"]:
+        logging.debug("survey **************")
 
 
 run(host='localhost', port=8089)

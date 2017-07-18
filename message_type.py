@@ -5,6 +5,19 @@ import logging
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 cache = dict()
 
+
+
+def display_survey_type(survey_id, total_questions):
+
+    counter = 1;
+    if str(survey_id) in cache:
+        for entry in cache[survey_id]: #for each question
+            question = entry.get(str(counter))
+
+        logging.debug("********** Question: %s", str(question.get("question")))
+
+
+
 def add_attachment_to_question(recipient_id, fb_data):
     logging.debug("*** Cache: %s ***", str(cache))
 
@@ -131,7 +144,10 @@ def type_of_message(recipient_id, fb_data):
 
         elif 'finish' == fb_data['message']['quick_reply']['payload']:
             if str(recipient_id) in cache:
-                return finish_webview(recipient_id)
+                total_questions = len(cache[str(recipient_id)])
+                finish_webview_str = finish_webview(recipient_id, recipient_id, total_questions)
+                logging.debug("*************** finish:%s", finish_webview_str)
+                return finish_webview_str
 
 
     elif 'attachments' in fb_data["message"]:
@@ -163,7 +179,7 @@ def set_level(recipient_id, level):
     return best_score(recipient_id, message, level)
 
 
-def finish_webview(recipient_id):
+def finish_webview(recipient_id, survey_id, questions):
     webview = """
         {
       "recipient":{
@@ -187,15 +203,15 @@ def finish_webview(recipient_id):
                         {
                           "title": "I took Peter's 'Which Hat Are You?' Quiz",
                           "subtitle": "My result: Fez",
-                          "image_url": "https://bot.peters-hats.com/img/hats/fez.jpg",
+                          "image_url": "http://louisville.k12.ms.us/survey/Survey1.jpg",
                           "default_action": {
                             "type": "web_url",
-                            "url": "https://m.me/petershats?ref=invited_by_24601"
+                            "url": "https://m.me/Witaidemo?ref=343434"
                           },
                           "buttons": [
                             {
                               "type": "web_url",
-                              "url": "https://m.me/petershats?ref=invited_by_24601",
+                              "url": "https://m.me/Witaidemo?ref=343434",
                               "title": "Take Quiz"
                             }
                           ]
@@ -354,3 +370,17 @@ def satisfaction_levels(recipient_id, text):
       }
     }"""
     return add_finish % (recipient_id, text)
+
+
+    def ask_for_response_free_answer(recipient_id, question):
+        free_answer_response = """
+            {
+              "recipient":{
+                "id":"%s"
+              },
+              "message":{
+                "text":"%s"
+              }
+            }
+        """
+        return free_answer_response % (recipient_id, question)
