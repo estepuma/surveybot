@@ -82,12 +82,13 @@ def webhook():
                     sender_id = messaging_event["sender"]["id"]
 
                     send_message(sender_id, "you has sent a messenger code with data: " + data)
-
-        response.status = 200
-        return
+        # response.status = 200
+        # return
 
     elif data["survey"]:
         logging.debug("survey **************")
 
+    response.status = 200
+    return
 
 run(host='localhost', port=8089)

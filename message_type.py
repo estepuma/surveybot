@@ -66,8 +66,8 @@ def send_message(recipient_id, message_string):
 
     r = requests.post("https://graph.facebook.com/v2.6/me/messages", params=params, headers=headers, data=data)
     if r.status_code != 200:
-        logging.debug(r.status_code)
-        logging.debug(r.text)
+        logging.debug("response status code: %s", r.status_code)
+        logging.debug("response message: %s", r.text)
 
 
 def type_of_message(recipient_id, fb_data):
