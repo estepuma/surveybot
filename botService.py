@@ -42,9 +42,9 @@ def display_survey(survey_id, total_questions):
 def webhook():
 
     # endpoint for processing incoming messaging events
+    logging.debug('\n\n')
     logging.debug("****** WEBHOOK")
     data = request.json
-    logging.debug('\n\n')
     logging.debug(data)  # you may not want to log every incoming message in production, but it's good for testing
 
     if data["object"] == "page":
@@ -81,7 +81,7 @@ def webhook():
                     data = messaging_event["referral"]["ref"]
                     sender_id = messaging_event["sender"]["id"]
 
-                    send_message(sender_id, "you has sent a messenger code with data: " + data)
+                    #send_message(sender_id, "you has sent a messenger code with data")
         # response.status = 200
         # return
 

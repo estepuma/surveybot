@@ -53,7 +53,7 @@ def attachment_file(recipient_id, fb_data, type_of_file):
 def send_message(recipient_id, message_string):
 
     params = {
-        "access_token": "EAAMqqmvE4FYBAJTZBJVZCVkwWCEMybOzEuVQtLwbP2PxYLP6v3XUFi1ZAgEHx6vr2fwmQZAL7YZBrXTZCrPkdeoGA8ub9JhZBh0SHG3cIg6vZChpRzMSo3cyrsvLpE72uDIS9sMnza4rT3pIG6wCmGMEns4ObFRnt5PnCZA1ZA4B3oqAZDZD"
+        "access_token": "EAAMqqmvE4FYBAGNVfR53ZAZC0QZAfSLeTXQIUMDGreTbIv61IcfB10fjvJkSkcT75E44vZBpkLVmoFAlwESEHFjC7lYk41a4MwzqZAMHqZAKqKGCuXhZAIgZC0sBFKh0wOX5NXpswZB1XJaIbJmzvzuDwcWmrHKZCBVfgE8CaC6mZBxEAZDZD"
     }
     headers = {
         "Content-Type": "application/json"
@@ -202,17 +202,17 @@ def finish_webview(recipient_id, survey_id, questions):
                       "elements": [
                         {
                           "title": "I took Peter's 'Which Hat Are You?' Quiz",
-                          "subtitle": "My result: Fez",
+                          "subtitle": "m.me functionality",
                           "image_url": "http://louisville.k12.ms.us/survey/Survey1.jpg",
                           "default_action": {
                             "type": "web_url",
-                            "url": "https://m.me/Witaidemo?ref=343434"
+                            "url": "https://m.me/witaidemo?ref=343434"
                           },
                           "buttons": [
                             {
                               "type": "web_url",
-                              "url": "https://m.me/Witaidemo?ref=343434",
-                              "title": "Take Quiz"
+                              "url": "https://m.me/witaidemo?ref=343434",
+                              "title": "Init"
                             }
                           ]
                         }
