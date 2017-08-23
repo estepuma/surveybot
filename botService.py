@@ -30,13 +30,22 @@ def verify():
     return "Hello world", 200
 
 
+@route('/survey/<survey_id>/questions/<total_questions>')
+def display_survey(survey_id, total_questions):
+    logging.debug("***** survey:%s  total_questions: %s", survey_id, total_questions)
+
+    if survey_id:
+        display_survey_type(survey_id, total_questions)
+
+
+
 @route('/webhook', method='POST')
 def webhook():
 
     # endpoint for processing incoming messaging events
-
-    data = request.json
     logging.debug('\n\n')
+    logging.debug("****** WEBHOOK")
+    data = request.json
     logging.debug(data)  # you may not want to log every incoming message in production, but it's good for testing
 
     if data["object"] == "page":
@@ -65,6 +74,7 @@ def webhook():
                     pass
 
                 if messaging_event.get("postback"):  # user clicked/tapped "postback" button in earlier message
+                    logging.debug("******** POSTBACK ***********")
                     pass
 
                 if messaging_event.get("referral") and messaging_event["referral"]["source"] == "SHORTLINK":
@@ -76,7 +86,5 @@ def webhook():
 
     response.status = 200
     return
-
-
 
 run(host='localhost', port=8089)

@@ -47,7 +47,7 @@ def attachment_file(recipient_id, fb_data, type_of_file):
 def send_message(recipient_id, message_string):
 
     params = {
-        "access_token": "EAAMqqmvE4FYBAJTZBJVZCVkwWCEMybOzEuVQtLwbP2PxYLP6v3XUFi1ZAgEHx6vr2fwmQZAL7YZBrXTZCrPkdeoGA8ub9JhZBh0SHG3cIg6vZChpRzMSo3cyrsvLpE72uDIS9sMnza4rT3pIG6wCmGMEns4ObFRnt5PnCZA1ZA4B3oqAZDZD"
+        "access_token": "EAAMqqmvE4FYBAGNVfR53ZAZC0QZAfSLeTXQIUMDGreTbIv61IcfB10fjvJkSkcT75E44vZBpkLVmoFAlwESEHFjC7lYk41a4MwzqZAMHqZAKqKGCuXhZAIgZC0sBFKh0wOX5NXpswZB1XJaIbJmzvzuDwcWmrHKZCBVfgE8CaC6mZBxEAZDZD"
     }
     headers = {
         "Content-Type": "application/json"
@@ -59,8 +59,8 @@ def send_message(recipient_id, message_string):
 
     r = requests.post("https://graph.facebook.com/v2.6/me/messages", params=params, headers=headers, data=data)
     if r.status_code != 200:
-        logging.debug(r.status_code)
-        logging.debug(r.text)
+        logging.debug("response status code: %s", r.status_code)
+        logging.debug("response message: %s", r.text)
 
 
 def type_of_message(recipient_id, fb_data):
@@ -177,7 +177,7 @@ def set_level(recipient_id, level):
     return best_score(recipient_id, message, level)
 
 
-def finish_webview(recipient_id):
+def finish_webview(recipient_id, survey_id, questions):
     webview = """
         {
       "recipient":{
@@ -200,17 +200,17 @@ def finish_webview(recipient_id):
                       "elements": [
                         {
                           "title": "I took Peter's 'Which Hat Are You?' Quiz",
-                          "subtitle": "My result: Fez",
-                          "image_url": "https://bot.peters-hats.com/img/hats/fez.jpg",
+                          "subtitle": "m.me functionality",
+                          "image_url": "http://louisville.k12.ms.us/survey/Survey1.jpg",
                           "default_action": {
                             "type": "web_url",
-                            "url": "https://m.me/petershats?ref=invited_by_24601"
+                            "url": "https://m.me/witaidemo?ref=343434"
                           },
                           "buttons": [
                             {
                               "type": "web_url",
-                              "url": "https://m.me/petershats?ref=invited_by_24601",
-                              "title": "Take Quiz"
+                              "url": "https://m.me/witaidemo?ref=343434",
+                              "title": "Init"
                             }
                           ]
                         }
