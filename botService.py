@@ -3,6 +3,7 @@ import sys
 
 from bottle import route, run, request, response, static_file
 from message_type import send_message, add_attachment_to_question, type_of_message
+from display_survey import show_survey
 
 import logging
 
@@ -66,11 +67,12 @@ def webhook():
                 if messaging_event.get("postback"):  # user clicked/tapped "postback" button in earlier message
                     pass
 
-                if messaging_event.get("referral") and messaging_event["referral"]["source"] == "MESSENGER_CODE":
+                if messaging_event.get("referral") and messaging_event["referral"]["source"] == "SHORTLINK":
                     data = messaging_event["referral"]["ref"]
                     sender_id = messaging_event["sender"]["id"]
-
-                    send_message(sender_id, "you has sent a messenger code with data: " + data)
+                    logging.debug('**** The data sent: %s', data)
+                    #send_message(sender_id, "you has sent a messenger code with data: " + data)
+                    show_survey(sender_id)
 
     response.status = 200
     return
