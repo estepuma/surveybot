@@ -95,7 +95,7 @@ def type_of_message(recipient_id, fb_data):
         elif 'another_question' == fb_data['message']['quick_reply']['payload']:
             if str(recipient_id) in cache:
                 size_cache = len(cache[recipient_id])
-                cache[recipient_id][str(size_cache + 1)] = {"question":"none", "type":"none", "attachment":{"type":"none"}}
+                cache[recipient_id][str(size_cache + 1)] = {"question":None, "type":None, "attachment":{"type":None}}
                 message = 'Write your question #' +  str(size_cache + 1)  + ' and send ...'
                 return normal_message(recipient_id, message)
 
@@ -142,7 +142,8 @@ def type_of_message(recipient_id, fb_data):
             if str(recipient_id) in cache:
                 insert_data(recipient_id, cache[recipient_id])
                 eliminates_user_from_cache(recipient_id)  #Eliminates cache
-                return finish_webview(recipient_id)
+                #return finish_webview(recipient_id)
+                return normal_message(recipient_id, "You have finished your survey!!")
 
 
     elif 'attachments' in fb_data["message"]:
@@ -151,7 +152,7 @@ def type_of_message(recipient_id, fb_data):
     elif cache.get(recipient_id):
         message = fb_data['message']['text']
         size_cache = len(cache[recipient_id])
-        cache[recipient_id][str(size_cache)] = {"question":message, "type":"none", "attachment":{"type":"none"}}
+        cache[recipient_id][str(size_cache)] = {"question":message, "type":None, "attachment":{"type":None}}
         #normal_message(recipient_id, message)
 
         return next_question(recipient_id, "What type of response you expect?")
@@ -172,7 +173,7 @@ def set_question_type(recipient_id, question_type):
 
 def set_level(recipient_id, level):
     size_cache = len(cache[str(recipient_id)])
-    cache[recipient_id][str(size_cache)]["levels"] = {"level":level, "best":"none"}
+    cache[recipient_id][str(size_cache)]["levels"] = {"level":level, "best":None}
     message = 'What is the best score?'
     return best_score(recipient_id, message, level)
 
@@ -230,7 +231,7 @@ def finish_webview(recipient_id, survey_id, questions):
 def normal_message(recipient_id, text):
     greet = """{
     	"recipient": {
-    		"id": %s
+    		"id": "%s"
     	},
         "message": {
     		"text": "%s"
@@ -390,6 +391,7 @@ def insert_data(recipient_id, dict_data):
     for number in range(1, size_cache + 1):
         question = dict_data[str(number)]
         question['order'] = number
+        question['answer'] = None
         survey['questions'].append(question)
 
     logging.debug("SURVEY: %s ***", survey)

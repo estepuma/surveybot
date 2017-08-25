@@ -10,7 +10,7 @@ users = db.users
 
 cache_answers = dict()
 
-def show_survey(recipient_id):
+def show_question(recipient_id, response_data_text):
     params = {
         "access_token": "EAAMqqmvE4FYBAJTZBJVZCVkwWCEMybOzEuVQtLwbP2PxYLP6v3XUFi1ZAgEHx6vr2fwmQZAL7YZBrXTZCrPkdeoGA8ub9JhZBh0SHG3cIg6vZChpRzMSo3cyrsvLpE72uDIS9sMnza4rT3pIG6wCmGMEns4ObFRnt5PnCZA1ZA4B3oqAZDZD"
     }
@@ -18,7 +18,7 @@ def show_survey(recipient_id):
         "Content-Type": "application/json"
     }
 
-    response_data = json.loads(normal_message_test(recipient_id, 'This is a test'))
+    response_data = json.loads(response_data_text)
     data = json.dumps(response_data)
 
     logging.debug("**** Displaying survey")
@@ -28,15 +28,94 @@ def show_survey(recipient_id):
         logging.debug(r.status_code)
         logging.debug(r.text)
 
+
+def display_question(recipient_id):
+    logging.debug("********* Entra a display question, con recipient_id:%s", recipient_id)
+    if str(recipient_id) in cache_answers:
+        logging.debug('In cache answer')
+        for question in cache_answers[recipient_id]['questions']:
+            logging.debug('In questions')
+            #Verify if question has an answer
+            if question['answer'] or question['answer'] == None or question['answer'] == '' :
+                logging.debug('No answer')
+                if question['type'] == 'free_answer':
+                    question_text = ''
+                    image_msg = ''
+                    logging.debug('**** Free question ****')
+                    if question['attachment']['url'] or question['attachment']['url'] != None:
+                        question_text = free_answer_template(recipient_id, question['question'])
+                        show_question(recipient_id, question_text)
+                        image_msg = free_answer_template(recipient_id, question['question'], True, question['attachment']['type'], question['attachment']['url'])
+                        show_question(recipient_id, image_msg)
+                    else:
+                        question_text = free_answer_template(recipient_id, question['question'])
+                    logging.debug('Question text: %s', question_text);
+                    #show_question(recipient_id, question_text)
+                    break
+                    #return free_answer_template(reciepient_id, question['question'])
+
+#Returns the questions and the attachment
+def free_answer_template(recipient_id, question, has_attachment = False, type_attachment = None, url = None):
+    question = question + ' (type your answer and send)'
+    free_question = """ """
+
+    if has_attachment:
+        logging.debug('With attachment')
+        free_question = """{
+        	"recipient": {
+        		"id": %s
+        	},
+            "message": {
+                "attachment":{
+                    "type":"%s",
+                    "payload":{
+                    "url":"%s"
+                    }
+                }
+        	}
+        }"""
+        free_question = free_question % (recipient_id, type_attachment, url)
+    else:
+        logging.debug('Without attachment')
+        free_question = """{
+        	"recipient": {
+        		"id": %s
+        	},
+            "message": {
+        		"text": "%s"
+        	}
+        }"""
+        free_question = free_question % (recipient_id, question)
+
+    return free_question
+
+#Get the questions from DB and put in cache
 def get_questions(recipient_id, survey_id):
-    logging.debug('*********** get questions')
-    for doc in users.find({'recipient_id':recipient_id, 'surveys':{"$elemMatch":{'survey_id':survey_id}}}):
-        logging.debug('\n*** Questions ***')
-        logging.debug('Survey:%s', doc)
-        for survey in doc['surveys']:
-            if survey['survey_id'] == survey_id:
-                for question in survey['questions']:
-                    print('** question: ', question)
+    logging.debug('*********** get questions, recipient_id:%s', recipient_id)
+
+    if str(recipient_id) in cache_answers:
+        logging.debug("** recipient_id in cache_answer")
+        pass
+    else:
+        logging.debug("** creating recipient_id in cache_answer")
+        cache_answers[str(recipient_id)] = {'survey_id': survey_id}
+
+        #Get user from database
+        for doc in users.find({'recipient_id':recipient_id, 'surveys':{"$elemMatch":{'survey_id':survey_id}}}):
+            logging.debug('\n*** Questions ***')
+            logging.debug('Survey:%s', doc)
+            #Get all surveys
+            for survey in doc['surveys']:
+                #Get just the survey we need by survey_id
+                if survey['survey_id'] == survey_id:
+                    #Put in cache
+                    cache_answers[recipient_id]['questions'] = survey['questions']
+
+                    for question in cache_answers[recipient_id]['questions']:
+                        logging.debug('** question: %s', question)
+
+                    display_question(recipient_id)
+
 
 def normal_message_test(recipient_id, text):
     greet = """{
@@ -50,4 +129,4 @@ def normal_message_test(recipient_id, text):
     return greet % (recipient_id, text)
 
 
-get_questions(str(1182512435167240), 'XBvMbZBzXmAqm')
+#get_questions(str(1182512435167240), 'XBvMbZBzXmAqm')

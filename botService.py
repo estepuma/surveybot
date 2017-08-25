@@ -3,7 +3,7 @@ import sys
 
 from bottle import route, run, request, response, static_file
 from message_type import send_message, add_attachment_to_question, type_of_message
-from display_survey import show_survey
+from display_survey import get_questions
 
 import logging
 
@@ -82,7 +82,7 @@ def webhook():
                     sender_id = messaging_event["sender"]["id"]
                     logging.debug('**** The data sent: %s', data)
                     #send_message(sender_id, "you has sent a messenger code with data: " + data)
-                    show_survey(sender_id)
+                    get_questions(sender_id, 'jYaNA6VW9ZZ1z')
 
     response.status = 200
     return
