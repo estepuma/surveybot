@@ -1,22 +1,16 @@
 import requests
 import json
 import logging
+from pymongo import MongoClient
+from datetime import datetime
+from hashids import Hashids
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 cache = dict()
 
-
-
-def display_survey_type(survey_id, total_questions):
-
-    counter = 1;
-    if str(survey_id) in cache:
-        for entry in cache[survey_id]: #for each question
-            question = entry.get(str(counter))
-
-        logging.debug("********** Question: %s", str(question.get("question")))
-
-
+client = MongoClient('localhost', 27017)
+db = client.survey
+questions = db.questions
 
 def add_attachment_to_question(recipient_id, fb_data):
     logging.debug("*** Cache: %s ***", str(cache))
@@ -61,7 +55,6 @@ def send_message(recipient_id, message_string):
 
     response_data = json.loads(message_string)
     data = json.dumps(response_data)
-
     logging.debug("*** Cache: %s ***", str(cache))
 
     r = requests.post("https://graph.facebook.com/v2.6/me/messages", params=params, headers=headers, data=data)
@@ -85,6 +78,8 @@ def type_of_message(recipient_id, fb_data):
             message = 'Write your question #1 and send ...'
             #Init cache of recipient_id
             cache[recipient_id] = {"1":dict()}
+
+            #insert_data(cache)
             return normal_message(recipient_id, message)
 
         elif 'free_answer' == fb_data['message']['quick_reply']['payload']: #Config a free answer question
@@ -95,11 +90,12 @@ def type_of_message(recipient_id, fb_data):
 
         elif 'satisfaction_levels' == fb_data['message']['quick_reply']['payload']:
             return set_question_type(recipient_id, 'satisfaction_level')
+            # return set_satisfaction_leves(recipient_id)
 
         elif 'another_question' == fb_data['message']['quick_reply']['payload']:
             if str(recipient_id) in cache:
                 size_cache = len(cache[recipient_id])
-                cache[recipient_id][str(size_cache + 1)] = {"question":"none", "type":"none", "attachment":{"type":"none"}}
+                cache[recipient_id][str(size_cache + 1)] = {"question":None, "type":None, "attachment":{"type":None}}
                 message = 'Write your question #' +  str(size_cache + 1)  + ' and send ...'
                 return normal_message(recipient_id, message)
 
@@ -144,10 +140,10 @@ def type_of_message(recipient_id, fb_data):
 
         elif 'finish' == fb_data['message']['quick_reply']['payload']:
             if str(recipient_id) in cache:
-                total_questions = len(cache[str(recipient_id)])
-                finish_webview_str = finish_webview(recipient_id, recipient_id, total_questions)
-                logging.debug("*************** finish:%s", finish_webview_str)
-                return finish_webview_str
+                insert_data(recipient_id, cache[recipient_id])
+                eliminates_user_from_cache(recipient_id)  #Eliminates cache
+                #return finish_webview(recipient_id)
+                return normal_message(recipient_id, "You have finished your survey!!")
 
 
     elif 'attachments' in fb_data["message"]:
@@ -156,7 +152,7 @@ def type_of_message(recipient_id, fb_data):
     elif cache.get(recipient_id):
         message = fb_data['message']['text']
         size_cache = len(cache[recipient_id])
-        cache[recipient_id][str(size_cache)] = {"question":message, "type":"none", "attachment":{"type":"none"}}
+        cache[recipient_id][str(size_cache)] = {"question":message, "type":None, "attachment":{"type":None}}
         #normal_message(recipient_id, message)
 
         return next_question(recipient_id, "What type of response you expect?")
@@ -168,13 +164,16 @@ def type_of_message(recipient_id, fb_data):
 def set_question_type(recipient_id, question_type):
     size_cache = len(cache[str(recipient_id)])
     cache[recipient_id][str(size_cache)]["type"] = question_type
-    message = 'Add image/video/audio to the question or select one option below'
-    return add_finish(recipient_id, message)
+    if question_type == 'satisfaction_level':
+        return satisfaction_levels(recipient_id, 'How many levels of satisfaction you want ?')
+    else:
+        message = 'Add one image/video/audio/location to the question or select one option below'
+        return add_finish(recipient_id, message)
 
 
 def set_level(recipient_id, level):
     size_cache = len(cache[str(recipient_id)])
-    cache[recipient_id][str(size_cache)]["levels"] = {"level":level, "best":"none"}
+    cache[recipient_id][str(size_cache)]["levels"] = {"level":level, "best":None}
     message = 'What is the best score?'
     return best_score(recipient_id, message, level)
 
@@ -232,7 +231,7 @@ def finish_webview(recipient_id, survey_id, questions):
 def normal_message(recipient_id, text):
     greet = """{
     	"recipient": {
-    		"id": %s
+    		"id": "%s"
     	},
         "message": {
     		"text": "%s"
@@ -371,16 +370,32 @@ def satisfaction_levels(recipient_id, text):
     }"""
     return add_finish % (recipient_id, text)
 
+#Eliminates user from local cache
+def eliminates_user_from_cache(recipient_id):
+    del cache[recipient_id]
 
-    def ask_for_response_free_answer(recipient_id, question):
-        free_answer_response = """
-            {
-              "recipient":{
-                "id":"%s"
-              },
-              "message":{
-                "text":"%s"
-              }
-            }
-        """
-        return free_answer_response % (recipient_id, question)
+#Insert data in mongo DB
+def insert_data(recipient_id, dict_data):
+    logging.debug("\n*** Insert data in DB ***")
+    logging.debug("DATA: %s ", dict_data)
+    logging.debug("Recipient_id: %s ", recipient_id)
+    size_cache = len(dict_data)
+
+    #Generating the id for the survey
+    hashids = Hashids(salt = recipient_id)
+    now = datetime.utcnow()
+    hashid = hashids.encode(long(now.strftime('%Y%m%d%H%M%S%f')))
+    #survey = {'survey_id': hashid, 'time':now, 'questions':[]}
+    survey = {'recipient_id':recipient_id, 'survey_id': hashid, 'time':now, 'questions':[]}
+
+    # Pushing every question in the array
+    for number in range(1, size_cache + 1):
+        question = dict_data[str(number)]
+        question['order'] = number
+        survey['questions'].append(question)
+
+    logging.debug("SURVEY: %s ***", survey)
+    logging.debug("\n")
+
+    #surveys.insert_one({'recipient_id': recipient_id}, {"$push": {'surveys':survey}}, upsert=True)
+    surveys.insert_one(survey)

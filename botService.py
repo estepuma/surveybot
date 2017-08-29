@@ -2,7 +2,8 @@ import os
 import sys
 
 from bottle import route, run, request, response, static_file
-from message_type import send_message, add_attachment_to_question, type_of_message, display_survey_type
+from message_type import send_message, add_attachment_to_question, type_of_message
+from display_survey import get_questions
 
 import logging
 
@@ -76,17 +77,13 @@ def webhook():
                     logging.debug("******** POSTBACK ***********")
                     pass
 
-                if messaging_event.get("referral") and messaging_event["referral"]["source"] == "MESSENGER_CODE":
-                    logging.debug("******** REFERRAL ***********")
+                if messaging_event.get("referral") and messaging_event["referral"]["source"] == "SHORTLINK":
                     data = messaging_event["referral"]["ref"]
+                    survey_creator_id, survey_id = data.split("-")
                     sender_id = messaging_event["sender"]["id"]
-
-                    #send_message(sender_id, "you has sent a messenger code with data")
-        # response.status = 200
-        # return
-
-    elif data["survey"]:
-        logging.debug("survey **************")
+                    logging.debug('**** The data sent: %s', data)
+                    #send_message(sender_id, "you has sent a messenger code with data: " + data)
+                    get_questions(sender_id, survey_creator_id, 'jYaNA6VW9ZZ1z')
 
     response.status = 200
     return
