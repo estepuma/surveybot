@@ -4,18 +4,38 @@ import logging
 from pymongo import MongoClient
 from datetime import datetime
 from hashids import Hashids
+from pymemcache.client.base import Client
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
-cache = dict()
 
+
+def json_serializer(key, value):
+     if type(value) == str:
+         return value, 1
+     return json.dumps(value), 2
+
+def json_deserializer(key, value, flags):
+    if flags == 1:
+        return value
+    if flags == 2:
+        return json.loads(value)
+    raise Exception("Unknown serialization format")
+
+mem_cache = Client(('localhost', 11211), serializer=json_serializer,
+                deserializer=json_deserializer)
+#cache = dict()
+
+
+#Mongo DB
 client = MongoClient('localhost', 27017)
 db = client.survey
 questions = db.questions
 
-def add_attachment_to_question(recipient_id, fb_data):
-    logging.debug("*** Cache: %s ***", str(cache))
 
-    if str(recipient_id) in cache:
+def add_attachment_to_question(recipient_id, fb_data):
+    logging.debug("*** Cache: %s ***", str(mem_cache))
+    cache = get_from_cache(recipient_id) #mem_cache.get(str(recipient_id))
+    if cache:
         if fb_data['type'] == 'image':
             return attachment_file(recipient_id, fb_data, 'image')
 
@@ -29,18 +49,21 @@ def add_attachment_to_question(recipient_id, fb_data):
             return attachment_file(recipient_id, fb_data, 'file')
 
         elif fb_data['type'] == 'location':
-            size_cache = len(cache[str(recipient_id)])
-            cache[recipient_id][str(size_cache)]["attachment"]["type"] = "location"
-            cache[recipient_id][str(size_cache)]["attachment"]["coordinates"] = {"lat": fb_data['payload']['coordinates']['lat'], "long":fb_data['payload']['coordinates']['long']}
+            size_cache = len(cache)
+            cache[str(size_cache)]["attachment"]["type"] = "location"
+            cache[str(size_cache)]["attachment"]["coordinates"] = {"lat": fb_data['payload']['coordinates']['lat'], "long":fb_data['payload']['coordinates']['long']}
+            set_to_memcached(recipient_id, cache) #mem_cache.set(str(recipient_id), cache)
             message = 'Add another question or finish the survey'
             return add_finish(recipient_id, message)
 
-    logging.debug("*** Cache: %s ***", str(cache))
+    logging.debug("*** Cache: %s ***", str(mem_cache))
 
 def attachment_file(recipient_id, fb_data, type_of_file):
-    size_cache = len(cache[str(recipient_id)])
-    cache[recipient_id][str(size_cache)]["attachment"]["type"] = type_of_file
-    cache[recipient_id][str(size_cache)]["attachment"]["url"] = fb_data['payload']['url']
+    cache = get_from_cache(recipient_id) #mem_cache.get(str(recipient_id))
+    size_cache = len(cache)
+    cache[str(size_cache)]["attachment"]["type"] = type_of_file
+    cache[str(size_cache)]["attachment"]["url"] = fb_data['payload']['url']
+    set_to_memcached(recipient_id, cache) #mem_cache.set(str(recipient_id), cache)
     message = 'Add another question or finish the survey'
     return add_finish(recipient_id, message)
 
@@ -55,7 +78,7 @@ def send_message(recipient_id, message_string):
 
     response_data = json.loads(message_string)
     data = json.dumps(response_data)
-    logging.debug("*** Cache: %s ***", str(cache))
+    logging.debug("*** Cache: %s ***", str(mem_cache))
 
     r = requests.post("https://graph.facebook.com/v2.6/me/messages", params=params, headers=headers, data=data)
     if r.status_code != 200:
@@ -77,7 +100,9 @@ def type_of_message(recipient_id, fb_data):
         if 'init_questions' == fb_data['message']['quick_reply']['payload']: #Initialize the first question
             message = 'Write your question #1 and send ...'
             #Init cache of recipient_id
-            cache[recipient_id] = {"1":dict()}
+            #cache[recipient_id] = {"1":dict()}
+            init_dictionary = {'1':dict()}
+            set_to_memcached(recipient_id, init_dictionary) #mem_cache.set(str(recipient_id), init_dictionary, 172800)  #valida cache for 2 days
 
             #insert_data(cache)
             return normal_message(recipient_id, message)
@@ -93,54 +118,67 @@ def type_of_message(recipient_id, fb_data):
             # return set_satisfaction_leves(recipient_id)
 
         elif 'another_question' == fb_data['message']['quick_reply']['payload']:
-            if str(recipient_id) in cache:
-                size_cache = len(cache[recipient_id])
-                cache[recipient_id][str(size_cache + 1)] = {"question":None, "type":None, "attachment":{"type":None}}
+            cache = get_from_cache(recipient_id) #mem_cache.get(str(recipient_id))
+            if cache:
+                size_cache = len(cache)
+                cache[str(size_cache + 1)] = {"question":None, "type":None, "attachment":{"type":None}}
+                set_to_memcached(recipient_id, cache) #mem_cache.set(str(recipient_id), cache)
                 message = 'Write your question #' +  str(size_cache + 1)  + ' and send ...'
                 return normal_message(recipient_id, message)
 
         elif 'level_5' == fb_data['message']['quick_reply']['payload']:
-            if str(recipient_id) in cache:
+            cache = get_from_cache(recipient_id) #mem_cache.get(str(recipient_id))
+            if cache:
                 return set_level(recipient_id, 5)
 
         elif 'level_6' == fb_data['message']['quick_reply']['payload']:
-            if str(recipient_id) in cache:
+            cache = get_from_cache(recipient_id) #mem_cache.get(str(recipient_id))
+            if cache:
                 return set_level(recipient_id, 6)
 
         elif 'level_7' == fb_data['message']['quick_reply']['payload']:
-            if str(recipient_id) in cache:
+            cache = get_from_cache(recipient_id) #mem_cache.get(str(recipient_id))
+            if cache:
                 return set_level(recipient_id, 7)
 
         elif 'level_8' == fb_data['message']['quick_reply']['payload']:
-            if str(recipient_id) in cache:
+            cache = get_from_cache(recipient_id) #mem_cache.get(str(recipient_id))
+            if cache:
                 return set_level(recipient_id, 8)
 
         elif 'level_9' == fb_data['message']['quick_reply']['payload']:
-            if str(recipient_id) in cache:
+            cache = get_from_cache(recipient_id) #mem_cache.get(str(recipient_id))
+            if cache:
                 return set_level(recipient_id, 9)
 
 
         elif 'level_10' == fb_data['message']['quick_reply']['payload']:
-            if str(recipient_id) in cache:
+            cache = get_from_cache(recipient_id) #mem_cache.get(str(recipient_id))
+            if cache:
                 return set_level(recipient_id, 10)
 
         elif 'less_value' == fb_data['message']['quick_reply']['payload']:
-            if str(recipient_id) in cache:
-                size_cache = len(cache[str(recipient_id)])
-                cache[recipient_id][str(size_cache)]["levels"]["best"] = 1
+            cache = get_from_cache(recipient_id) #mem_cache.get(str(recipient_id))
+            if cache:
+                size_cache = len(cache)
+                cache[str(size_cache)]["levels"]["best"] = 1
+                set_to_memcached(recipient_id, cache) #mem_cache.set(str(recipient_id), cache)
                 message = 'Add image/video/audio to the question or select one option below'
                 return add_finish(recipient_id, message)
 
         elif 'best_value' == fb_data['message']['quick_reply']['payload']:
-            if str(recipient_id) in cache:
-                size_cache = len(cache[str(recipient_id)])
-                cache[recipient_id][str(size_cache)]["levels"]["best"] = cache[recipient_id][str(size_cache)]["levels"]["level"]
+            cache = get_from_cache(recipient_id) #mem_cache.get(str(recipient_id))
+            if cache:
+                size_cache = len(cache)
+                cache[str(size_cache)]["levels"]["best"] = cache[str(size_cache)]["levels"]["level"]
+                set_to_memcached(recipient_id, cache) #mem_cache.set(str(recipient_id), cache)
                 message = 'Add image/video/audio to the question or select one option below'
                 return add_finish(recipient_id, message)
 
         elif 'finish' == fb_data['message']['quick_reply']['payload']:
-            if str(recipient_id) in cache:
-                insert_data(recipient_id, cache[recipient_id])
+            cache = get_from_cache(recipient_id) #mem_cache.get(str(recipient_id))
+            if cache:
+                insert_data(recipient_id, cache)
                 eliminates_user_from_cache(recipient_id)  #Eliminates cache
                 #return finish_webview(recipient_id)
                 return normal_message(recipient_id, "You have finished your survey!!")
@@ -149,10 +187,14 @@ def type_of_message(recipient_id, fb_data):
     elif 'attachments' in fb_data["message"]:
         if fb_data["message"]['attachments'][0]['type'] == 'location':
             response_data['message']['text'] = 'Your location: lat ' + str(fb_data["message"]['attachments'][0]['payload']['coordinates']['lat']) + ' and long ' + str(fb_data["message"]['attachments'][0]['payload']['coordinates']['long'])
-    elif cache.get(recipient_id):
+    elif get_from_cache(recipient_id): #mem_cache.get(str(recipient_id))
+        cache = get_from_cache(recipient_id) #mem_cache.get(str(recipient_id))
         message = fb_data['message']['text']
-        size_cache = len(cache[recipient_id])
-        cache[recipient_id][str(size_cache)] = {"question":message, "type":None, "attachment":{"type":None}}
+        size_cache = len(cache)
+        logging.debug('** size_cache:%s', size_cache)
+        logging.debug('** cache:%s', cache)
+        cache[str(size_cache)] = {"question":message, "type":None, "attachment":{"type":None}}
+        set_to_memcached(recipient_id, cache) #mem_cache.set(str(recipient_id), cache)
         #normal_message(recipient_id, message)
 
         return next_question(recipient_id, "What type of response you expect?")
@@ -162,8 +204,10 @@ def type_of_message(recipient_id, fb_data):
 
 
 def set_question_type(recipient_id, question_type):
-    size_cache = len(cache[str(recipient_id)])
-    cache[recipient_id][str(size_cache)]["type"] = question_type
+    cache = get_from_cache(recipient_id) #mem_cache.get(str(recipient_id))
+    size_cache = len(cache)
+    cache[str(size_cache)]["type"] = question_type
+    set_to_memcached(recipient_id, cache) #mem_cache.set(str(recipient_id), cache)
     if question_type == 'satisfaction_level':
         return satisfaction_levels(recipient_id, 'How many levels of satisfaction you want ?')
     else:
@@ -172,8 +216,10 @@ def set_question_type(recipient_id, question_type):
 
 
 def set_level(recipient_id, level):
-    size_cache = len(cache[str(recipient_id)])
-    cache[recipient_id][str(size_cache)]["levels"] = {"level":level, "best":None}
+    cache = get_from_cache(recipient_id) #mem_cache.get(str(recipient_id))
+    size_cache = len(cache)
+    cache[str(size_cache)]["levels"] = {"level":level, "best":None}
+    set_to_memcached(recipient_id, cache) #mem_cache.set(str(recipient_id), cache)
     message = 'What is the best score?'
     return best_score(recipient_id, message, level)
 
@@ -370,9 +416,19 @@ def satisfaction_levels(recipient_id, text):
     }"""
     return add_finish % (recipient_id, text)
 
+#Ge value from mem_cache with prefix survey_
+def get_from_cache(recipient_id):
+    cache = mem_cache.get('survey_' + recipient_id)
+
+    return cache;
+
+#Set value to memcached with prefix survey_
+def set_to_memcached(recipient_id, cache):
+    mem_cache.set('survey_' + recipient_id, cache, 172800)
+
 #Eliminates user from local cache
 def eliminates_user_from_cache(recipient_id):
-    del cache[recipient_id]
+    mem_cache.delete('survey_' + recipient_id)
 
 #Insert data in mongo DB
 def insert_data(recipient_id, dict_data):
@@ -398,4 +454,4 @@ def insert_data(recipient_id, dict_data):
     logging.debug("\n")
 
     #surveys.insert_one({'recipient_id': recipient_id}, {"$push": {'surveys':survey}}, upsert=True)
-    surveys.insert_one(survey)
+    questions.insert_one(survey)

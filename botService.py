@@ -59,11 +59,11 @@ def webhook():
                     if messaging_event["message"].get("attachments"):
                         for messaging_attachment in messaging_event["message"].get("attachments"):
                             logging.debug("*** JSON attachment: %s ***", str(messaging_attachment))
-                            message_string = add_attachment_to_question(sender_id, messaging_attachment)
+                            message_string = add_attachment_to_question(str(sender_id), messaging_attachment)
                             if (message_string and message_string != ''):
                                 send_message(sender_id, message_string)
                     else:
-                        message_string = type_of_message(sender_id, messaging_event)
+                        message_string = type_of_message(str(sender_id), messaging_event)
                         if (message_string and message_string != ''):
                             send_message(sender_id, message_string)
 
@@ -83,7 +83,7 @@ def webhook():
                     sender_id = messaging_event["sender"]["id"]
                     logging.debug('**** The data sent: %s', data)
                     #send_message(sender_id, "you has sent a messenger code with data: " + data)
-                    get_questions(sender_id, survey_creator_id, 'jYaNA6VW9ZZ1z')
+                    get_questions(str(sender_id), survey_creator_id, survey_id)
 
     response.status = 200
     return
